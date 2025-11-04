@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, FormEvent, useRef } from 'react'; // useRef 추가
 import { fetchWithToken } from '@/utils/fetchWithToken';
 import { toast } from 'sonner';
 import {
@@ -60,11 +60,12 @@ export default function Menus() {
   const [menus, setMenus] = useState<Menu[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedMenu, setSelectedMenu] = useState<Menu | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<number>(0); // 0은 Default(전체) 카테고리
+  const [selectedCategory, setSelectedCategory] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   // Form states
+  const addFormRef = useRef<HTMLFormElement>(null); // form 참조 추가
   const [menuName, setMenuName] = useState('');
   const [menuNameEn, setMenuNameEn] = useState('');
   const [menuPrice, setMenuPrice] = useState('');
@@ -89,7 +90,6 @@ export default function Menus() {
         throw new Error(data.message || 'Failed to fetch menus');
       setMenus(data);
     } catch (error: any) {
-      console.error('Failed to fetch menus:', error);
       toast.error(error.message || '메뉴 목록을 불러오는데 실패했습니다');
     } finally {
       setLoading(false);
@@ -112,7 +112,6 @@ export default function Menus() {
       if (filteredCategories.length > 0)
         setMenuCategory(filteredCategories[0].categoryId.toString());
     } catch (error: any) {
-      console.error('Failed to fetch categories:', error);
       toast.error(error.message || '카테고리 목록을 불러오는데 실패했습니다');
     }
   };
@@ -135,23 +134,24 @@ export default function Menus() {
     try {
       const response = await fetchWithToken(
         `${process.env.NEXT_PUBLIC_API_URL}/api/menu`,
-        {
-          method: 'POST',
-          body: formData,
-        }
+        { method: 'POST', body: formData }
       );
 
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Failed to add menu');
 
       toast.success('메뉴가 추가되었습니다');
+      //
+      // ✨ FIX: 폼 전체를 리셋하여 파일 입력 필드까지 초기화합니다.
+      addFormRef.current?.reset();
       setMenuName('');
       setMenuNameEn('');
       setMenuPrice('');
       setMenuImage(null);
+      if (categories.length > 0)
+        setMenuCategory(categories[0].categoryId.toString());
       fetchMenus();
     } catch (error: any) {
-      console.error('Failed to add menu:', error);
       toast.error(error.message || '메뉴 추가에 실패했습니다');
     } finally {
       setSubmitting(false);
@@ -168,13 +168,14 @@ export default function Menus() {
     formData.append('menuNameEn', selectedMenu.menuNameEn);
     formData.append('menuPrice', selectedMenu.menuPrice.toString());
 
-    // 기존 카테고리 정보 유지
-    const existingCategories = selectedMenu.categories;
-    const categoryIds = existingCategories
-      .filter((cat) => cat.categoryName !== '전체')
-      .map((cat) => cat.categoryId.toString())
-      .join(',');
-    formData.append('categoryIds', categoryIds);
+    //
+    // ✨ FIX: 수정 모달에서 변경된 카테고리 ID가 제대로 전송되도록 수정합니다.
+    const primaryCategory = selectedMenu.categories.find(
+      (cat) => cat.categoryName !== '전체'
+    );
+    if (primaryCategory) {
+      formData.append('categoryIds', primaryCategory.categoryId.toString());
+    }
 
     if (updateImage) {
       formData.append('image', updateImage);
@@ -183,10 +184,7 @@ export default function Menus() {
     try {
       const response = await fetchWithToken(
         `${process.env.NEXT_PUBLIC_API_URL}/api/menu/${selectedMenu.menuId}`,
-        {
-          method: 'PUT',
-          body: formData,
-        }
+        { method: 'PUT', body: formData }
       );
 
       const data = await response.json();
@@ -198,7 +196,6 @@ export default function Menus() {
       setUpdateImage(null);
       fetchMenus();
     } catch (error: any) {
-      console.error('Failed to update menu:', error);
       toast.error(error.message || '메뉴 수정에 실패했습니다');
     } finally {
       setSubmitting(false);
@@ -210,18 +207,18 @@ export default function Menus() {
       try {
         const response = await fetchWithToken(
           `${process.env.NEXT_PUBLIC_API_URL}/api/menu/${menuId}`,
-          {
-            method: 'DELETE',
-          }
+          { method: 'DELETE' }
         );
 
-        if (!response.ok) throw new Error('메뉴 삭제에 실패했습니다');
+        if (!response.ok) {
+           const errData = await response.json();
+           throw new Error(errData.message || '메뉴 삭제에 실패했습니다');
+        }
 
         toast.success('메뉴가 삭제되었습니다');
         fetchMenus();
       } catch (error: any) {
-        console.error('Failed to delete menu:', error);
-        toast.error('메뉴 삭제에 실패했습니다');
+        toast.error(error.message || '메뉴 삭제에 실패했습니다');
       }
     });
   };
@@ -244,11 +241,12 @@ export default function Menus() {
       </div>
 
       <main className='flex flex-col gap-8 w-full'>
-        {/* Add Menu Section */}
         <form
+          ref={addFormRef} // ref 연결
           onSubmit={handleAddMenu}
           className='bg-white rounded-3xl p-6 flex flex-col gap-8'
         >
+          {/* 메뉴 추가 폼 (내용 동일) ... */}
           <h3 className='text-[18px] inter-semibold'>메뉴 추가</h3>
           <div className='flex flex-col gap-4'>
             <div className='flex gap-8'>
@@ -339,7 +337,6 @@ export default function Menus() {
           </div>
         </form>
 
-        {/* Menu List Section */}
         <div className='bg-white rounded-3xl p-6 flex flex-col gap-8'>
           <div className='flex justify-between items-center'>
             <h3 className='text-[18px] inter-semibold'>메뉴 목록</h3>
@@ -369,7 +366,8 @@ export default function Menus() {
                     {menu.imageUrl && (
                       <div className='relative w-full h-48 rounded-xl overflow-hidden'>
                         <Image
-                          src={menu.imageUrl}
+                          // ✨ FIX: 백엔드 주소를 포함한 전체 URL을 사용합니다.
+                          src={`${process.env.NEXT_PUBLIC_API_URL}${menu.imageUrl}`}
                           alt={menu.menuName}
                           fill
                           className='object-cover'
@@ -410,7 +408,6 @@ export default function Menus() {
           )}
         </div>
 
-        {/* Edit Menu Modal */}
         {selectedMenu && (
           <div className='fixed inset-0 bg-black/50 flex items-center justify-center'>
             <form
@@ -420,6 +417,7 @@ export default function Menus() {
               <h3 className='text-[18px] inter-semibold mb-6'>메뉴 수정</h3>
               <div className='flex flex-col gap-4'>
                 <div className='flex gap-8'>
+                  {/* 이름, 영문이름 입력 필드 (내용 동일) ... */}
                   <div className='flex flex-col gap-2 flex-1'>
                     <label className='inter-semibold'>메뉴 이름 (한글)</label>
                     <input
@@ -458,7 +456,8 @@ export default function Menus() {
                       onChange={(e) =>
                         setSelectedMenu({
                           ...selectedMenu,
-                          menuPrice: parseInt(e.target.value),
+                          // ✨ FIX: 입력값이 비었을 때 NaN이 되는 것을 방지
+                          menuPrice: parseInt(e.target.value) || 0,
                         })
                       }
                       className='border border-indigo-300 rounded-2xl p-4 focus:outline-0 focus:border-indigo-600'
@@ -480,26 +479,15 @@ export default function Menus() {
                           height={16}
                         />
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent className='w-[400px]'>
+                      <DropdownMenuContent className='w-[275px]'>
                         {categories.map((category) => (
                           <DropdownMenuItem
                             key={category.categoryId}
                             onSelect={() =>
+                              // ✨ FIX: 카테고리 변경 시 selectedMenu 상태를 올바르게 업데이트합니다.
                               setSelectedMenu({
                                 ...selectedMenu,
-                                categories: [
-                                  {
-                                    categoryId: category.categoryId,
-                                    categoryName: category.categoryName,
-                                  },
-                                  {
-                                    categoryId:
-                                      categories.find(
-                                        (cat) => cat.categoryName === '전체'
-                                      )?.categoryId || 0,
-                                    categoryName: '전체',
-                                  },
-                                ],
+                                categories: [category], // 선택된 카테고리로 교체
                               })
                             }
                           >
@@ -515,7 +503,8 @@ export default function Menus() {
                   {selectedMenu.imageUrl && !updateImage && (
                     <div className='relative w-full h-48 rounded-xl overflow-hidden mb-2'>
                       <Image
-                        src={selectedMenu.imageUrl}
+                        // ✨ FIX: 백엔드 주소를 포함한 전체 URL을 사용합니다.
+                        src={`${process.env.NEXT_PUBLIC_API_URL}${selectedMenu.imageUrl}`}
                         alt={selectedMenu.menuName}
                         fill
                         className='object-cover'
@@ -532,7 +521,7 @@ export default function Menus() {
                   />
                   {updateImage && (
                     <div className='text-sm text-blue-500'>
-                      새로운 이미지가 선택되었습니다
+                      새로운 이미지가 선택되었습니다: {updateImage.name}
                     </div>
                   )}
                 </div>
