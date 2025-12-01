@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useState, useEffect, FormEvent, useRef } from 'react'; // useRef 추가
+import { useState, useEffect, FormEvent, useRef } from 'react';
 import { fetchWithToken } from '@/utils/fetchWithToken';
 import { toast } from 'sonner';
 import {
@@ -56,6 +56,74 @@ const useConfirm = () => {
   };
 };
 
+/**
+ * 메뉴 이름(영문) 비어있으면 번역 API 호출해서 채우기
+ */
+async function translateMenuNameIfEmpty(
+  koreanName: string,
+  currentEn: string
+): Promise<string> {
+  if (currentEn?.trim()) return currentEn;
+
+  const res = await fetch('/api/translate-menu', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: koreanName }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || '영문 메뉴 이름 번역에 실패했습니다');
+  }
+
+  const data = await res.json();
+  const translated = (data.translatedText as string | undefined)?.trim() || '';
+
+  if (!translated) {
+    throw new Error('영문 메뉴 이름을 생성하지 못했습니다');
+  }
+
+  return translated;
+}
+
+/**
+ * 이미지 비어있으면 GPT 이미지 생성 API 호출해서 File 객체 만들기
+ */
+async function generateMenuImageFileIfEmpty(
+  prompt: string,
+  currentFile: File | null
+): Promise<File | null> {
+  if (currentFile) return currentFile;
+
+  const res = await fetch('/api/generate-menu-image', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || '메뉴 이미지 생성에 실패했습니다');
+  }
+
+  const data = await res.json();
+  const imageUrl = data.imageUrl as string | undefined;
+
+  if (!imageUrl) {
+    throw new Error('생성된 이미지 URL을 받지 못했습니다');
+  }
+
+  const imgRes = await fetch(imageUrl);
+  if (!imgRes.ok) {
+    throw new Error('생성된 이미지를 불러오는데 실패했습니다');
+  }
+
+  const blob = await imgRes.blob();
+  const file = new File([blob], 'menu-image.png', { type: blob.type || 'image/png' });
+
+  return file;
+}
+
 export default function Menus() {
   const [menus, setMenus] = useState<Menu[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -65,7 +133,7 @@ export default function Menus() {
   const [submitting, setSubmitting] = useState(false);
 
   // Form states
-  const addFormRef = useRef<HTMLFormElement>(null); // form 참조 추가
+  const addFormRef = useRef<HTMLFormElement>(null);
   const [menuName, setMenuName] = useState('');
   const [menuNameEn, setMenuNameEn] = useState('');
   const [menuPrice, setMenuPrice] = useState('');
@@ -118,20 +186,41 @@ export default function Menus() {
 
   const handleAddMenu = async (e: FormEvent) => {
     e.preventDefault();
-    if (!menuName || !menuNameEn || !menuPrice || !menuCategory || !menuImage) {
-      toast.error('모든 필드를 입력해주세요');
+
+    // 필수값: 한글 이름, 가격, 카테고리
+    if (!menuName || !menuPrice || !menuCategory) {
+      toast.error('메뉴 이름(한글), 가격, 카테고리를 입력해주세요');
       return;
     }
 
     setSubmitting(true);
-    const formData = new FormData();
-    formData.append('menuName', menuName);
-    formData.append('menuNameEn', menuNameEn);
-    formData.append('menuPrice', menuPrice);
-    formData.append('categoryIds', menuCategory);
-    formData.append('image', menuImage);
 
     try {
+      // 1) 영문 이름 비어있으면 번역 API로 채우기
+      const finalMenuNameEn = await translateMenuNameIfEmpty(
+        menuName,
+        menuNameEn
+      );
+      setMenuNameEn(finalMenuNameEn);
+
+      // 2) 이미지 비어있으면 GPT 이미지 생성
+      const finalMenuImage = await generateMenuImageFileIfEmpty(
+        menuName,
+        menuImage
+      );
+      if (!finalMenuImage) {
+        throw new Error('메뉴 이미지를 생성하지 못했습니다');
+      }
+      setMenuImage(finalMenuImage);
+
+      // 3) FormData 구성
+      const formData = new FormData();
+      formData.append('menuName', menuName);
+      formData.append('menuNameEn', finalMenuNameEn);
+      formData.append('menuPrice', menuPrice);
+      formData.append('categoryIds', menuCategory);
+      formData.append('image', finalMenuImage);
+
       const response = await fetchWithToken(
         `${process.env.NEXT_PUBLIC_API_URL}/api/menu`,
         { method: 'POST', body: formData }
@@ -141,8 +230,8 @@ export default function Menus() {
       if (!response.ok) throw new Error(data.message || 'Failed to add menu');
 
       toast.success('메뉴가 추가되었습니다');
-      //
-      // ✨ FIX: 폼 전체를 리셋하여 파일 입력 필드까지 초기화합니다.
+
+      // 폼 초기화
       addFormRef.current?.reset();
       setMenuName('');
       setMenuNameEn('');
@@ -168,8 +257,6 @@ export default function Menus() {
     formData.append('menuNameEn', selectedMenu.menuNameEn);
     formData.append('menuPrice', selectedMenu.menuPrice.toString());
 
-    //
-    // ✨ FIX: 수정 모달에서 변경된 카테고리 ID가 제대로 전송되도록 수정합니다.
     const primaryCategory = selectedMenu.categories.find(
       (cat) => cat.categoryName !== '전체'
     );
@@ -211,8 +298,8 @@ export default function Menus() {
         );
 
         if (!response.ok) {
-           const errData = await response.json();
-           throw new Error(errData.message || '메뉴 삭제에 실패했습니다');
+          const errData = await response.json();
+          throw new Error(errData.message || '메뉴 삭제에 실패했습니다');
         }
 
         toast.success('메뉴가 삭제되었습니다');
@@ -242,11 +329,10 @@ export default function Menus() {
 
       <main className='flex flex-col gap-8 w-full'>
         <form
-          ref={addFormRef} // ref 연결
+          ref={addFormRef}
           onSubmit={handleAddMenu}
           className='bg-white rounded-3xl p-6 flex flex-col gap-8'
         >
-          {/* 메뉴 추가 폼 (내용 동일) ... */}
           <h3 className='text-[18px] inter-semibold'>메뉴 추가</h3>
           <div className='flex flex-col gap-4'>
             <div className='flex gap-8'>
@@ -272,7 +358,7 @@ export default function Menus() {
                   type='text'
                   value={menuNameEn}
                   onChange={(e) => setMenuNameEn(e.target.value)}
-                  placeholder='메뉴 이름 (영문)'
+                  placeholder='메뉴 이름 (영문, 비워두면 자동 번역)'
                   className='border border-indigo-300 rounded-2xl p-4 focus:outline-0 focus:border-indigo-600'
                 />
               </div>
@@ -323,6 +409,9 @@ export default function Menus() {
                 onChange={(e) => setMenuImage(e.target.files?.[0] || null)}
                 className='border border-indigo-300 rounded-2xl p-4 focus:outline-0 focus:border-indigo-600'
               />
+              <p className='text-xs text-gray-500'>
+                파일을 선택하지 않으면 GPT가 1:1 비율 이미지를 자동 생성합니다.
+              </p>
             </div>
             <button
               type='submit'
@@ -366,7 +455,6 @@ export default function Menus() {
                     {menu.imageUrl && (
                       <div className='relative w-full h-48 rounded-xl overflow-hidden'>
                         <Image
-                          // ✨ FIX: 백엔드 주소를 포함한 전체 URL을 사용합니다.
                           src={`${process.env.NEXT_PUBLIC_API_URL}${menu.imageUrl}`}
                           alt={menu.menuName}
                           fill
@@ -417,7 +505,6 @@ export default function Menus() {
               <h3 className='text-[18px] inter-semibold mb-6'>메뉴 수정</h3>
               <div className='flex flex-col gap-4'>
                 <div className='flex gap-8'>
-                  {/* 이름, 영문이름 입력 필드 (내용 동일) ... */}
                   <div className='flex flex-col gap-2 flex-1'>
                     <label className='inter-semibold'>메뉴 이름 (한글)</label>
                     <input
@@ -456,7 +543,6 @@ export default function Menus() {
                       onChange={(e) =>
                         setSelectedMenu({
                           ...selectedMenu,
-                          // ✨ FIX: 입력값이 비었을 때 NaN이 되는 것을 방지
                           menuPrice: parseInt(e.target.value) || 0,
                         })
                       }
@@ -484,10 +570,9 @@ export default function Menus() {
                           <DropdownMenuItem
                             key={category.categoryId}
                             onSelect={() =>
-                              // ✨ FIX: 카테고리 변경 시 selectedMenu 상태를 올바르게 업데이트합니다.
                               setSelectedMenu({
                                 ...selectedMenu,
-                                categories: [category], // 선택된 카테고리로 교체
+                                categories: [category],
                               })
                             }
                           >
@@ -503,7 +588,6 @@ export default function Menus() {
                   {selectedMenu.imageUrl && !updateImage && (
                     <div className='relative w-full h-48 rounded-xl overflow-hidden mb-2'>
                       <Image
-                        // ✨ FIX: 백엔드 주소를 포함한 전체 URL을 사용합니다.
                         src={`${process.env.NEXT_PUBLIC_API_URL}${selectedMenu.imageUrl}`}
                         alt={selectedMenu.menuName}
                         fill
