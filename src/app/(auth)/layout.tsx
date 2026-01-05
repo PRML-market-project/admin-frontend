@@ -9,7 +9,7 @@ export default function AuthLayout({
       <div className='w-1/2 relative flex flex-col items-center justify-center bg-indigo-50'>
         {/* 왼쪽 상단 브랜드명 */}
         <h1 className='absolute top-6 left-8 text-indigo-900 text-2xl font-semibold tracking-tight'>
-          Mallang Order
+          Market
         </h1>
 
         {/* 로고 */}
