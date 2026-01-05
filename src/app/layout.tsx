@@ -37,8 +37,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: '말랑 오더 관리자',
-  description: '말랑 오더 관리자',
+  title: 'market 관리자',
+  description: 'market 관리자',
   icons: {
     icon: '/logo.svg',
   },

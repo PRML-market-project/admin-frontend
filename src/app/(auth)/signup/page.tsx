@@ -180,7 +180,7 @@ export default function SignUp() {
               Sign up
             </h2>
             <p className='inter-regular text-[15px] text-indigo-700'>
-              말랑오더에 가입하고 효율적인 가게 관리를 시작해볼까요?
+              가입하고 효율적인 가게 관리를 시작해볼까요?
             </p>
           </div>
         </div>
@@ -201,7 +201,7 @@ export default function SignUp() {
                   className={`appearance-none rounded-[8px] relative h-[46px] block w-full px-3 py-2 border ${
                     errors.name ? 'border-red-300' : 'border-indigo-300'
                   } placeholder-indigo-300 text-indigo-900 focus:outline-none focus:border-indigo-300 focus:z-10 sm:text-sm`}
-                  placeholder='김말랑'
+                  placeholder='홍길동'
                 />
                 {name && (
                   <button

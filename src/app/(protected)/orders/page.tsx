@@ -110,7 +110,7 @@ export default function Orders() {
   };
 
   const handleDeactivateKiosk = (kioskId: number) => {
-    confirmAction('정말로 이 테이블을 비활성화하시겠습니까?', async () => {
+    confirmAction('정말로 이 키오스크를 비활성화하시겠습니까?', async () => {
       setSubmitting(true);
       try {
         // Optimistic update
@@ -302,7 +302,7 @@ export default function Orders() {
                             disabled={submitting || isRefreshing}
                             className='w-full py-2 px-4 bg-slate-500 hover:cursor-pointer text-white rounded-xl hover:opacity-80 disabled:opacity-50 transition-opacity'
                           >
-                            {submitting ? '처리중...' : '테이블 비활성화'}
+                            {submitting ? '처리중...' : '키오스크 비활성화'}
                           </button>
                         )}
                       </div>
