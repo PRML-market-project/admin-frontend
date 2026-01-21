@@ -63,7 +63,7 @@ export default function CategoryDeleter({
     <div className='flex w-full gap-8'>
       <div className='flex flex-col gap-2'>
         <DropdownMenu>
-          <span className='inter-semibold'>삭제할 카테고리</span>
+          <span className='inter-semibold'>삭제할 점포</span>
           <DropdownMenuTrigger
             className='outline-0 w-[400px] border border-indigo-300 text-black rounded-2xl flex disabled:opacity-50'
             disabled={loading || filteredCategories.length === 0}
@@ -77,7 +77,7 @@ export default function CategoryDeleter({
                 <span className='inter-regular w-full p-4 text-left'>
                   {selectedCategory
                     ? `${selectedCategory.category_name} (${selectedCategory.category_name_en})`
-                    : '카테고리 선택'}
+                    : '점포 선택'}
                 </span>
                 <Image
                   src='/DownArrow.svg'
@@ -112,7 +112,7 @@ export default function CategoryDeleter({
       </div>
 
       <div className='flex flex-col gap-2'>
-        <span className='inter-semibold'>카테고리 삭제</span>
+        <span className='inter-semibold'>점포 삭제</span>
         <button
           onClick={handleDelete}
           disabled={!selectedCategory || loading}

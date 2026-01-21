@@ -12,6 +12,7 @@ interface APICategory {
   categoryId: number;
   categoryName: string;
   categoryNameEn: string;
+  categoryType: string;
   adminId: number;
   menus: any[];
 }
@@ -20,6 +21,7 @@ export default function Categories() {
   const [categories, setCategories] = useState<APICategory[]>([]);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryNameEn, setNewCategoryNameEn] = useState('');
+  const [newCategoryType, setNewCategoryType] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -62,12 +64,13 @@ export default function Categories() {
         category_id: cat.categoryId.toString(),
         category_name: cat.categoryName,
         category_name_en: cat.categoryNameEn,
+        category_type: cat.categoryType,
       }));
   };
 
   const handleAddCategory = async () => {
-    if (!newCategoryName.trim() || !newCategoryNameEn.trim()) {
-      toast.error('카테고리 이름을 모두 입력해주세요');
+    if (!newCategoryName.trim() || !newCategoryNameEn.trim() || !newCategoryType.trim()) {
+      toast.error('점포 이름과 타입을 모두 입력해주세요');
       return;
     }
 
@@ -82,6 +85,7 @@ export default function Categories() {
           body: JSON.stringify({
             categoryName: newCategoryName,
             categoryNameEn: newCategoryNameEn,
+            categoryType: newCategoryType,
           }),
         }
       );
@@ -94,6 +98,7 @@ export default function Categories() {
       toast.success('카테고리가 추가되었습니다');
       setNewCategoryName('');
       setNewCategoryNameEn('');
+      setNewCategoryType('');
       fetchCategories(); // 목록 새로고침
     } catch (error: any) {
       console.error('Failed to add category:', error);
@@ -104,53 +109,70 @@ export default function Categories() {
   return (
     <div className='h-full flex-1 p-8 flex flex-col gap-[30px] overflow-y-scroll'>
       <div>
-        <h1 className='text-[32px] inter-semibold'>카테고리 관리</h1>
+        <h1 className='text-[32px] inter-semibold'>점포 관리</h1>
         <h2 className='text-[16px] inter-medium text-ml-gray-dark'>
-          Category Management
+          Store Management
         </h2>
       </div>
       <main className='flex flex-col gap-8 w-full'>
         <div className='bg-white rounded-3xl p-6 flex flex-col gap-8'>
-          <h3 className='text-[18px] inter-semibold'>카테고리 추가</h3>
-          <div className='flex gap-4 w-full'>
+          <h3 className='text-[18px] inter-semibold'>점포 추가</h3>
+          <div className='flex flex-col gap-4 w-full'>
             <div className='flex flex-col gap-2'>
               <label htmlFor='category-name' className='inter-semibold'>
-                카테고리 이름
+                점포 이름 (한글)
               </label>
-              <div className='flex flex-col gap-4 w-full'>
+              <input
+                id='category-name'
+                type='text'
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                placeholder='점포 이름 (한글)'
+                className='w-[400px] border border-indigo-300 rounded-2xl p-4 focus:outline-0 focus:border-indigo-600 placeholder:text-indigo-300'
+              />
+            </div>
+            <div className='flex gap-8 items-end'>
+              <div className='flex flex-col gap-2'>
+                <label htmlFor='category-name-en' className='inter-semibold'>
+                  점포 이름 (영문)
+                </label>
                 <input
-                  id='category-name'
+                  id='category-name-en'
                   type='text'
-                  value={newCategoryName}
-                  onChange={(e) => setNewCategoryName(e.target.value)}
-                  placeholder='카테고리 이름 (한글)'
+                  value={newCategoryNameEn}
+                  onChange={(e) => setNewCategoryNameEn(e.target.value)}
+                  placeholder='점포 이름 (영문)'
                   className='w-[400px] border border-indigo-300 rounded-2xl p-4 focus:outline-0 focus:border-indigo-600 placeholder:text-indigo-300'
                 />
-                <div className='flex gap-8'>
-                  <input
-                    id='category-name-en'
-                    type='text'
-                    value={newCategoryNameEn}
-                    onChange={(e) => setNewCategoryNameEn(e.target.value)}
-                    placeholder='카테고리 이름 (영문)'
-                    className='w-[400px] border border-indigo-300 rounded-2xl p-4 focus:outline-0 focus:border-indigo-600 placeholder:text-indigo-300'
-                  />
-                  <button
-                    onClick={handleAddCategory}
-                    disabled={
-                      !newCategoryName.trim() ||
-                      !newCategoryNameEn.trim() ||
-                      loading
-                    }
-                    className='flex items-center justify-center gap-2 rounded-2xl hover:cursor-pointer bg-indigo-500 text-white p-4 w-[200px] disabled:opacity-50'
-                  >
-                    <Image src='/Submit.svg' alt='add' width={16} height={16} />
-                    <span className='inter-regular'>
-                      {loading ? '처리중...' : '카테고리 추가'}
-                    </span>
-                  </button>
-                </div>
               </div>
+              <div className='flex flex-col gap-2'>
+                <label htmlFor='category-type' className='inter-semibold'>
+                  카테고리 타입
+                </label>
+                <input
+                  id='category-type'
+                  type='text'
+                  value={newCategoryType}
+                  onChange={(e) => setNewCategoryType(e.target.value)}
+                  placeholder='카테고리 타입을 입력하세요'
+                  className='w-[400px] border border-indigo-300 rounded-2xl p-4 focus:outline-0 focus:border-indigo-600 placeholder:text-indigo-300'
+                />
+              </div>
+              <button
+                onClick={handleAddCategory}
+                disabled={
+                  !newCategoryName.trim() ||
+                  !newCategoryNameEn.trim() ||
+                  !newCategoryType.trim() ||
+                  loading
+                }
+                className='flex items-center justify-center gap-2 rounded-2xl hover:cursor-pointer bg-indigo-500 text-white p-4 w-[200px] h-[56px] disabled:opacity-50'
+              >
+                <Image src='/Submit.svg' alt='add' width={16} height={16} />
+                <span className='inter-regular'>
+                  {loading ? '처리중...' : '점포 추가'}
+                </span>
+              </button>
             </div>
           </div>
         </div>
@@ -158,13 +180,13 @@ export default function Categories() {
         {loading ? (
           <div className='bg-white rounded-3xl p-6 flex justify-center items-center h-40'>
             <span className='text-ml-gray-dark'>
-              카테고리 정보를 불러오는 중...
+              점포 정보를 불러오는 중...
             </span>
           </div>
         ) : (
           <>
             <div className='bg-white rounded-3xl p-6 flex flex-col gap-8'>
-              <h3 className='text-[18px] inter-semibold'>카테고리 수정</h3>
+              <h3 className='text-[18px] inter-semibold'>점포 수정</h3>
               <div className='flex gap-4 w-full'>
                 <CategoryNameChanger
                   categories={transformCategories(categories)}
@@ -174,7 +196,7 @@ export default function Categories() {
             </div>
 
             <div className='bg-white rounded-3xl p-6 flex flex-col gap-8'>
-              <h3 className='text-[18px] inter-semibold'>카테고리 삭제</h3>
+              <h3 className='text-[18px] inter-semibold'>점포 삭제</h3>
               <div className='flex gap-4 w-full'>
                 <CategoryDeleter
                   categories={transformCategories(categories)}

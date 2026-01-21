@@ -163,14 +163,14 @@ export default function Orders() {
     <div className='h-full flex-1 p-8 flex flex-col gap-[30px] overflow-y-scroll'>
       <ConfirmModal />
       <div className='flex flex-col'>
-        <h1 className='text-[32px] inter-semibold'>주문 관리</h1>
+        <h1 className='text-[32px] inter-semibold'>키오스크 관리</h1>
         <h2 className='text-[16px] inter-medium text-ml-gray-dark'>
           Order Management
         </h2>
       </div>
       <div className='bg-white rounded-3xl p-6 flex flex-col gap-8'>
         <div className='flex justify-between items-center'>
-          <h3 className='text-[18px] inter-semibold'>테이블별 주문 현황</h3>
+          <h3 className='text-[18px] inter-semibold'>키오스크 현황</h3>
           <button
             onClick={fetchInitialData}
             disabled={isRefreshing}

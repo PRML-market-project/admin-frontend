@@ -18,6 +18,7 @@ interface Menu {
   menuName: string;
   menuNameEn: string;
   menuPrice: number;
+  menuCount?: string;
   imageUrl?: string;
   adminId: number;
   categories: {
@@ -137,6 +138,7 @@ export default function Menus() {
   const [menuName, setMenuName] = useState('');
   const [menuNameEn, setMenuNameEn] = useState('');
   const [menuPrice, setMenuPrice] = useState('');
+  const [menuCount, setMenuCount] = useState('');
   const [menuCategory, setMenuCategory] = useState('');
   const [menuImage, setMenuImage] = useState<File | null>(null);
   const [updateImage, setUpdateImage] = useState<File | null>(null);
@@ -218,6 +220,9 @@ export default function Menus() {
       formData.append('menuName', menuName);
       formData.append('menuNameEn', finalMenuNameEn);
       formData.append('menuPrice', menuPrice);
+      if (menuCount) {
+        formData.append('menuCount', menuCount);
+      }
       formData.append('categoryIds', menuCategory);
       formData.append('image', finalMenuImage);
 
@@ -236,6 +241,7 @@ export default function Menus() {
       setMenuName('');
       setMenuNameEn('');
       setMenuPrice('');
+      setMenuCount('');
       setMenuImage(null);
       if (categories.length > 0)
         setMenuCategory(categories[0].categoryId.toString());
@@ -256,6 +262,9 @@ export default function Menus() {
     formData.append('menuName', selectedMenu.menuName);
     formData.append('menuNameEn', selectedMenu.menuNameEn);
     formData.append('menuPrice', selectedMenu.menuPrice.toString());
+    if (selectedMenu.menuCount !== undefined && selectedMenu.menuCount !== null) {
+      formData.append('menuCount', selectedMenu.menuCount);
+    }
 
     const primaryCategory = selectedMenu.categories.find(
       (cat) => cat.categoryName !== '전체'
@@ -377,6 +386,21 @@ export default function Menus() {
                   className='border border-indigo-300 rounded-2xl p-4 focus:outline-0 focus:border-indigo-600'
                 />
               </div>
+              <div className='flex flex-col gap-2 flex-1'>
+                <label htmlFor='menu-count' className='inter-semibold'>
+                  메뉴 수량
+                </label>
+                <input
+                  id='menu-count'
+                  type='text'
+                  value={menuCount}
+                  onChange={(e) => setMenuCount(e.target.value)}
+                  placeholder='메뉴 수량'
+                  className='border border-indigo-300 rounded-2xl p-4 focus:outline-0 focus:border-indigo-600'
+                />
+              </div>
+            </div>
+            <div className='flex gap-8'>
               <div className='flex flex-col gap-2 flex-1'>
                 <label htmlFor='menu-category' className='inter-semibold'>
                   카테고리
@@ -549,6 +573,23 @@ export default function Menus() {
                       className='border border-indigo-300 rounded-2xl p-4 focus:outline-0 focus:border-indigo-600'
                     />
                   </div>
+                  <div className='flex flex-col gap-2 flex-1'>
+                    <label className='inter-semibold'>메뉴 수량</label>
+                    <input
+                      type='text'
+                      value={selectedMenu.menuCount || ''}
+                      onChange={(e) =>
+                        setSelectedMenu({
+                          ...selectedMenu,
+                          menuCount: e.target.value,
+                        })
+                      }
+                      placeholder='메뉴 수량'
+                      className='border border-indigo-300 rounded-2xl p-4 focus:outline-0 focus:border-indigo-600'
+                    />
+                  </div>
+                </div>
+                <div className='flex gap-8'>
                   <div className='flex flex-col gap-2 flex-1'>
                     <label className='inter-semibold'>카테고리</label>
                     <DropdownMenu>
