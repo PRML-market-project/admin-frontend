@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 
 interface CategoryDropdownProps {
   categories: Category[];
-  onUpdate?: () => void; // 수정 후 목록 새로고침을 위한 콜백
+  onUpdate?: () => void;
 }
 
 export default function CategoryNameChanger({
@@ -29,7 +29,6 @@ export default function CategoryNameChanger({
   const [newCategoryType, setNewCategoryType] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // "전체" 카테고리를 제외한 카테고리 목록
   const filteredCategories = categories.filter(
     (cat) => cat.category_name !== '전체'
   );
@@ -40,7 +39,11 @@ export default function CategoryNameChanger({
       return;
     }
 
-    if (!newCategoryName.trim() || !newCategoryNameEn.trim() || !newCategoryType.trim()) {
+    if (
+      !newCategoryName.trim() ||
+      !newCategoryNameEn.trim() ||
+      !newCategoryType.trim()
+    ) {
       toast.error('새로운 카테고리 이름과 타입을 모두 입력해주세요');
       return;
     }
@@ -51,9 +54,7 @@ export default function CategoryNameChanger({
         `${process.env.NEXT_PUBLIC_API_URL}/api/category/${selectedCategory.category_id}`,
         {
           method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             categoryName: newCategoryName,
             categoryNameEn: newCategoryNameEn,
@@ -71,7 +72,7 @@ export default function CategoryNameChanger({
       setNewCategoryName('');
       setNewCategoryNameEn('');
       setNewCategoryType('');
-      onUpdate?.(); // 목록 새로고침
+      onUpdate?.();
     } catch (error: any) {
       console.error('Failed to update category:', error);
       toast.error(error.message || '카테고리 수정에 실패했습니다');
@@ -80,47 +81,60 @@ export default function CategoryNameChanger({
     }
   };
 
+  const inputBase =
+    'rounded-2xl p-4 bg-card text-foreground border border-border outline-none transition placeholder:text-muted-foreground/70 focus:ring-2 focus:ring-ring focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed';
+
+  const primaryBtn =
+    'flex items-center justify-center gap-2 rounded-2xl bg-primary text-primary-foreground hover:opacity-95 transition focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed';
+
   return (
-    <div className='flex w-full gap-8'>
-      <div className='flex flex-col gap-2'>
+    <div className="flex w-full gap-8">
+      {/* Dropdown */}
+      <div className="flex flex-col gap-2">
         <DropdownMenu>
-          <span className='inter-semibold'>변경할 점포</span>
+          <span className="inter-semibold text-foreground">변경할 점포</span>
+
           <DropdownMenuTrigger
-            className='outline-0 w-[400px] border border-indigo-300 text-black rounded-2xl flex disabled:opacity-50'
+            className={[
+              'outline-none w-[400px] rounded-2xl flex items-center justify-between',
+              'bg-card text-foreground border border-border',
+              'transition focus:ring-2 focus:ring-ring focus:border-transparent',
+              'disabled:opacity-50 disabled:cursor-not-allowed',
+            ].join(' ')}
             disabled={loading || filteredCategories.length === 0}
           >
             {filteredCategories.length === 0 ? (
-              <span className='inter-regular p-4'>
+              <span className="inter-regular p-4 text-muted-foreground">
                 생성된 카테고리가 없습니다
               </span>
             ) : (
               <>
-                <span className='inter-regular w-full p-4 text-left'>
+                <span className="inter-regular w-full p-4 text-left">
                   {selectedCategory
                     ? `${selectedCategory.category_name} (${selectedCategory.category_name_en})`
                     : '점포 선택'}
                 </span>
                 <Image
-                  src='/DownArrow.svg'
-                  alt='arrow-down'
+                  src="/DownArrow.svg"
+                  alt="arrow-down"
                   width={16}
                   height={16}
-                  className='mx-4'
+                  className="mx-4 opacity-70"
                 />
               </>
             )}
           </DropdownMenuTrigger>
 
-          <DropdownMenuContent className='w-[400px] left-0'>
+          <DropdownMenuContent className="w-[400px] left-0 bg-card text-foreground border border-border">
             <DropdownMenuSeparator />
             {filteredCategories.length === 0 ? (
-              <div className='p-4 text-center text-gray-500'>
+              <div className="p-4 text-center text-muted-foreground">
                 생성된 카테고리가 없습니다
               </div>
             ) : (
               filteredCategories.map((category) => (
                 <DropdownMenuItem
-                  className='w-[400px]'
+                  className="w-[400px] cursor-pointer focus:bg-accent focus:text-foreground"
                   key={category.category_id}
                   onSelect={() => {
                     setSelectedCategory(category);
@@ -137,54 +151,66 @@ export default function CategoryNameChanger({
         </DropdownMenu>
       </div>
 
-      <div className='flex flex-col gap-2'>
-        <label className='inter-semibold'>
-          점포 정보 수정
-        </label>
-        <div className='flex flex-col gap-4 w-full'>
-          <div className='flex flex-col gap-2'>
-            <label htmlFor='category-name' className='inter-semibold text-sm'>
+      {/* Form */}
+      <div className="flex flex-col gap-2">
+        <label className="inter-semibold text-foreground">점포 정보 수정</label>
+
+        <div className="flex flex-col gap-4 w-full">
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor="category-name"
+              className="inter-semibold text-sm text-foreground"
+            >
               점포 이름 (한글)
             </label>
             <input
-              id='category-name'
-              type='text'
+              id="category-name"
+              type="text"
               value={newCategoryName}
               onChange={(e) => setNewCategoryName(e.target.value)}
-              placeholder='새로운 점포 이름 (한글)'
+              placeholder="새로운 점포 이름 (한글)"
               disabled={!selectedCategory || loading}
-              className='w-[300px] border border-indigo-300 rounded-2xl p-4 focus:outline-0 focus:border-indigo-600 disabled:opacity-50'
+              className={[inputBase, 'w-[300px]'].join(' ')}
             />
           </div>
-          <div className='flex gap-8 items-end'>
-            <div className='flex flex-col gap-2'>
-              <label htmlFor='category-name-en' className='inter-semibold text-sm'>
+
+          <div className="flex gap-8 items-end">
+            <div className="flex flex-col gap-2">
+              <label
+                htmlFor="category-name-en"
+                className="inter-semibold text-sm text-foreground"
+              >
                 점포 이름 (영문)
               </label>
               <input
-                id='category-name-en'
-                type='text'
+                id="category-name-en"
+                type="text"
                 value={newCategoryNameEn}
                 onChange={(e) => setNewCategoryNameEn(e.target.value)}
-                placeholder='새로운 점포 이름 (영문)'
+                placeholder="새로운 점포 이름 (영문)"
                 disabled={!selectedCategory || loading}
-                className='w-[300px] border border-indigo-300 rounded-2xl p-4 focus:outline-0 focus:border-indigo-600 disabled:opacity-50'
+                className={[inputBase, 'w-[300px]'].join(' ')}
               />
             </div>
-            <div className='flex flex-col gap-2'>
-              <label htmlFor='category-type' className='inter-semibold text-sm'>
+
+            <div className="flex flex-col gap-2">
+              <label
+                htmlFor="category-type"
+                className="inter-semibold text-sm text-foreground"
+              >
                 카테고리 타입
               </label>
               <input
-                id='category-type'
-                type='text'
+                id="category-type"
+                type="text"
                 value={newCategoryType}
                 onChange={(e) => setNewCategoryType(e.target.value)}
-                placeholder='카테고리 타입을 입력하세요'
+                placeholder="카테고리 타입을 입력하세요"
                 disabled={!selectedCategory || loading}
-                className='w-[300px] border border-indigo-300 rounded-2xl p-4 focus:outline-0 focus:border-indigo-600 disabled:opacity-50'
+                className={[inputBase, 'w-[300px]'].join(' ')}
               />
             </div>
+
             <button
               onClick={handleUpdate}
               disabled={
@@ -194,10 +220,10 @@ export default function CategoryNameChanger({
                 !newCategoryType.trim() ||
                 loading
               }
-              className='flex items-center justify-center gap-2 rounded-2xl hover:cursor-pointer bg-indigo-500 text-white p-4 w-[200px] h-[56px] disabled:opacity-50'
+              className={[primaryBtn, 'w-[200px] h-[56px] text-white p-4'].join(' ')}
             >
-              <Image src='/Submit.svg' alt='add' width={16} height={16} />
-              <span className='inter-regular'>
+              <Image src="/Submit.svg" alt="add" width={16} height={16} />
+              <span className="inter-regular">
                 {loading ? '처리중...' : '수정하기'}
               </span>
             </button>

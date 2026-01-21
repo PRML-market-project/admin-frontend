@@ -40,17 +40,14 @@ export default function NavigationBar() {
   };
 
   const handleLogout = () => {
-    // Remove tokens from localStorage
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
 
-    // Remove tokens from cookies
     document.cookie =
       'accessToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
     document.cookie =
       'refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
 
-    // Redirect to login page
     router.push('/login');
   };
 
@@ -77,11 +74,9 @@ export default function NavigationBar() {
         throw new Error('Failed to delete account');
       }
 
-      // Remove tokens from localStorage
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
 
-      // Remove tokens from cookies
       document.cookie =
         'accessToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
       document.cookie =
@@ -108,51 +103,67 @@ export default function NavigationBar() {
 
   return (
     <>
-      <div className='w-[20%] rounded-r-[25px] text-white bg-indigo-600 h-full flex flex-col'>
-        <div className='p-6 flex flex-col items-center gap-4'>
+      {/* Sidebar */}
+      <div
+        className={[
+          'w-[20%] h-full flex flex-col',
+          // ✅ 라운드 제거
+          'rounded-none',
+          'bg-sidebar text-sidebar-foreground',
+        ].join(' ')}
+      >
+        {/* Profile */}
+        <div className="p-6 flex flex-col items-center gap-4">
           {storeInfo && (
             <>
               <div
-                className='w-16 h-16 rounded-full bg-indigo-100 bg-gradient-to-br from-indigo-200 to-indigo-400
-               tracking-tight flex items-center justify-center
-              shadow-[0_10px_30px_rgba(99,102,241,0.4)] border border-indigo-300 relative overflow-hidden '
+                className="w-16 h-16 rounded-full flex items-center justify-center relative overflow-hidden border"
+                style={{
+                  background: 'var(--ml-auth-logo-bg)',
+                  borderColor: 'var(--border)',
+                  boxShadow: '0 8px 20px rgba(120,98,70,0.25)',
+                }}
               >
                 <span
-                  className='text-indigo-600 text-xl font-semibold'
+                  className="text-xl font-semibold"
                   style={{
-                    background:
-                      'linear-gradient(135deg, #5c6ac4 0%, #3b43a9 100%)',
+                    background: 'var(--ml-auth-logo-text-gradient)',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
-                    filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.15))',
+                    textShadow: '0 1px 1px rgba(0,0,0,0.15)',
                   }}
                 >
                   {storeInfo.adminName.slice(1, 3)}
                 </span>
               </div>
 
-              <div className='text-center'>
-                <p className='font-semibold'>{storeInfo.adminName}</p>
-                <p className='text-sm text-indigo-100'>{storeInfo.email}</p>
+              <div className="text-center">
+                <p className="font-semibold text-sidebar-foreground">
+                  {storeInfo.adminName}
+                </p>
+                <p className="text-sm text-muted-foreground">{storeInfo.email}</p>
               </div>
             </>
           )}
         </div>
 
-        <ul className='flex flex-col gap-2 w-[84%] mx-auto mt-4'>
+        {/* Navigation */}
+        <ul className="flex flex-col gap-2 w-[84%] mx-auto mt-4">
           {navItems.map(({ href, label, icon }) => {
             const isSelected = pathname === href;
             const imageSrc = `/${icon}${isSelected ? 'S' : ''}.svg`;
+
             return (
               <li
                 key={href}
-                className={`w-full p-4 rounded-2xl ${
+                className={[
+                  'w-full p-4 rounded-2xl transition',
                   isSelected
-                    ? 'bg-indigo-100 text-indigo-600'
-                    : 'hover:bg-indigo-500'
-                }`}
+                    ? 'bg-card text-foreground shadow-sm'
+                    : 'hover:bg-accent text-sidebar-foreground',
+                ].join(' ')}
               >
-                <Link href={href} className='flex items-center gap-2'>
+                <Link href={href} className="flex items-center gap-2">
                   <Image src={imageSrc} alt={label} width={18} height={18} />
                   <p>{label}</p>
                 </Link>
@@ -161,53 +172,73 @@ export default function NavigationBar() {
           })}
         </ul>
 
-        <div className='mt-auto mb-8 w-[84%] mx-auto flex items-center gap-2 text-sm'>
+        {/* Bottom actions */}
+        <div className="mt-auto mb-8 w-[84%] mx-auto flex items-center gap-2 text-sm">
           <button
             onClick={() => setIsDeleteModalOpen(true)}
-            className='flex flex-1 items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-slate-500 text-white hover:opacity-80 hover:cursor-pointer transition'
+            className={[
+              'flex flex-1 items-center justify-center gap-2 px-4 py-3 rounded-2xl transition',
+              // ✅ 탈퇴 버튼: 배경은 밝게 두되 글자/테두리 대비 올림
+              'bg-card text-foreground border border-border hover:bg-accent',
+            ].join(' ')}
           >
-            <Image src='/Delete-admin.svg' alt='탈퇴' width={18} height={18} />
-            <span>탈퇴</span>
+            <Image src="/Delete-admin.svg" alt="탈퇴" width={18} height={18} />
+            <span className="text-foreground">탈퇴</span>
           </button>
+
           <button
             onClick={handleLogout}
-            className='flex flex-1 items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-indigo-500 text-white hover:opacity-80 hover:cursor-pointer transition'
+            className={[
+              'flex flex-1 items-center justify-center gap-2 px-4 py-3 rounded-2xl transition',
+              'bg-primary hover:opacity-95',
+            ].join(' ')}
           >
-            <Image src='/Logout.svg' alt='로그아웃' width={18} height={18} />
-            <span>로그아웃</span>
+            <Image src="/Logout.svg" alt="로그아웃" width={18} height={18} />
+            {/* ✅ 로그아웃 글자 흰색 */}
+            <span className="text-white">로그아웃</span>
           </button>
         </div>
       </div>
 
       {/* Delete Account Modal */}
       {isDeleteModalOpen && (
-        <div className='fixed inset-0 bg-black/50 flex items-center justify-center z-50'>
-          <div className='bg-white rounded-2xl p-6 w-[400px]'>
-            <h2 className='text-xl font-semibold mb-4'>계정 삭제</h2>
-            <p className='text-gray-600 mb-4'>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-card text-foreground rounded-2xl p-6 w-[400px] border border-border shadow-lg">
+            <h2 className="text-xl font-semibold mb-3">계정 삭제</h2>
+            <p className="text-sm text-muted-foreground mb-4">
               계정을 삭제하시려면 비밀번호를 입력해주세요.
             </p>
+
             <input
-              type='password'
+              type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder='비밀번호를 입력하세요'
-              className='w-full p-3 border border-gray-300 rounded-xl mb-4 focus:outline-none focus:border-indigo-500'
+              placeholder="비밀번호를 입력하세요"
+              className={[
+                'w-full px-3 py-2 rounded-xl text-sm',
+                'bg-card text-foreground border border-border outline-none transition',
+                'focus:ring-2 focus:ring-ring focus:border-transparent',
+              ].join(' ')}
             />
-            <div className='flex gap-2 justify-end'>
+
+            <div className="flex gap-2 justify-end mt-4">
               <button
                 onClick={() => {
                   setIsDeleteModalOpen(false);
                   setPassword('');
                 }}
-                className='px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-xl'
+                className="px-4 py-2 rounded-xl text-sm bg-muted text-muted-foreground hover:bg-accent hover:text-foreground transition"
               >
                 취소
               </button>
+
               <button
                 onClick={handleDeleteAccount}
                 disabled={isDeleting}
-                className='px-4 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 disabled:opacity-50'
+                className={[
+                  'px-4 py-2 rounded-xl text-sm text-white transition',
+                  'bg-destructive hover:opacity-95 disabled:opacity-50',
+                ].join(' ')}
               >
                 {isDeleting ? '처리중...' : '탈퇴'}
               </button>
